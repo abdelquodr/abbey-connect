@@ -85,7 +85,7 @@ export default function EmailSignupPage() {
     setIsLoading(true);
 
     try {
-      const response = await authApi.register({
+      await authApi.register({
         name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
         email: formData.email.trim(),
         password: formData.password,

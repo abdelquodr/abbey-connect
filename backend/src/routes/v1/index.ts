@@ -2,6 +2,7 @@ import express from 'express';
 import authRoute from './auth.route';
 import userRoute from './user.route';
 import connectionRoute from './connection.route';
+import messageRoute from './message.route';
 import docsRoute from './docs.route';
 import config from '../../config/config';
 
@@ -19,6 +20,10 @@ const defaultRoutes = [
   {
     path: '/connections',
     route: connectionRoute
+  },
+  {
+    path: '/messages',
+    route: messageRoute
   }
 ];
 

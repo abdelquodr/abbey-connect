@@ -26,6 +26,7 @@ model User {
   Token               Token[]
   sentConnections     Connection[] @relation("ConnectionRequester")
   receivedConnections Connection[] @relation("ConnectionRecipient")
+  sentMessages        Message[]
 }
 
 model Token {
@@ -49,8 +50,20 @@ model Connection {
   requesterId Int
   recipient   User             @relation("ConnectionRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
   recipientId Int
+  messages    Message[]
 
   @@unique([requesterId, recipientId])
+}
+
+model Message {
+  id           Int        @id @default(autoincrement())
+  content      String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  connectionId Int
+  sender       User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId     Int
 }
 
 enum Role {

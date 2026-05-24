@@ -68,15 +68,16 @@ const queryUsers = async <Key extends keyof User>(
   const limit = options.limit ?? 10;
   const sortBy = options.sortBy;
   const sortType = options.sortType ?? 'desc';
-  const search = (filter as { search?: string }).search;
+  const search = (filter as { search?: string }).search?.trim();
+  const searchTerms = search ? search.split(/\s+/).filter(Boolean) : [];
   const users = await prisma.user.findMany({
     where: search
       ? {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { city: { contains: search, mode: 'insensitive' } },
-            { headline: { contains: search, mode: 'insensitive' } }
+            ...searchTerms.map((term) => ({
+              name: { contains: term, mode: 'insensitive' }
+            }))
           ]
         }
       : filter,

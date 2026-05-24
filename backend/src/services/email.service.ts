@@ -69,6 +69,7 @@ Enter this code in the app to verify your email. If you did not request this, yo
 };
 
 export default {
+  transport,
   sendEmail,
   sendResetPasswordEmail,
   sendVerificationEmail

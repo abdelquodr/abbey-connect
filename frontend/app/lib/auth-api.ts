@@ -184,12 +184,3 @@ export const authApi = {
     });
   },
 };
-
-export type {
-  AuthApiErrorCode,
-  AuthResponse,
-  LoginPayload,
-  RegisterPayload,
-  ResendOtpPayload,
-  VerifyOtpPayload,
-};

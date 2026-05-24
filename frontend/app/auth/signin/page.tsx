@@ -97,7 +97,7 @@ export default function LoginPage() {
       setToken(token);
       setEmail(formData.email.trim());
 
-      router.push("/app");
+      router.push("/app/messages");
     } catch (error) {
       const submitMessage =
         error instanceof AuthApiError

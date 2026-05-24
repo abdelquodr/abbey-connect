@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import {
   backendFetcher,
@@ -15,23 +14,10 @@ export default function ConnectionsPage() {
     backendFetcher,
   );
   const { data, error } = useSWR(connectionsKey, backendFetcher);
-  const [recipientId, setRecipientId] = useState("");
-  const [note, setNote] = useState("");
 
   if (userError || error)
     return <div className="p-8">Unable to load connections.</div>;
   if (!data || !userData) return <div className="p-8">Loading...</div>;
-
-  const submitRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await backendRequest("/v1/connections", {
-      method: "POST",
-      body: JSON.stringify({ recipientId: Number(recipientId), note }),
-    });
-    setRecipientId("");
-    setNote("");
-    mutate(connectionsKey);
-  };
 
   const patchStatus = async (id: number, status: string) => {
     await backendRequest(`/v1/connections/${id}`, {
@@ -49,26 +35,15 @@ export default function ConnectionsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-8">
-      <h2 className="text-2xl font-semibold mb-4">Connections</h2>
-
-      <form onSubmit={submitRequest} className="mb-6 grid grid-cols-3 gap-2">
-        <input
-          value={recipientId}
-          onChange={(e) => setRecipientId(e.target.value)}
-          placeholder="Recipient user id"
-          className="p-2 border rounded col-span-1"
-        />
-        <input
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Note (optional)"
-          className="p-2 border rounded col-span-1"
-        />
-        <button className="col-span-1 bg-blue-600 text-white p-2 rounded">
-          Send Request
-        </button>
-      </form>
+    <section className="space-y-4">
+      <div className="rounded-3xl bg-white p-6 shadow-[0_12px_34px_rgba(17,24,39,0.06)]">
+        <h2 className="text-2xl font-bold tracking-[-0.04em] text-[#2b2f38]">
+          Connections
+        </h2>
+        <p className="mt-1 text-sm text-[#8a96a3]">
+          Review your pending, accepted, and rejected connections here.
+        </p>
+      </div>
 
       <div className="space-y-4">
         {data.map((c: any) => {
@@ -78,25 +53,29 @@ export default function ConnectionsPage() {
           return (
             <div
               key={c.id}
-              className="p-4 bg-white rounded shadow flex justify-between items-center"
+              className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-[0_12px_34px_rgba(17,24,39,0.06)] sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <div className="font-semibold">{other.name || other.email}</div>
-                <div className="text-sm text-gray-600">{c.note}</div>
-                <div className="text-xs text-gray-500">Status: {c.status}</div>
+                <div className="text-base font-semibold text-[#2b2f38]">
+                  {other.name || other.email}
+                </div>
+                <div className="mt-1 text-sm text-[#8a96a3]">{c.note}</div>
+                <div className="mt-2 text-xs font-medium uppercase tracking-wide text-[#8a96a3]">
+                  Status: {c.status}
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {c.status === "PENDING" && !isRequester && (
                   <>
                     <button
                       onClick={() => patchStatus(c.id, "ACCEPTED")}
-                      className="px-3 py-1 bg-green-500 text-white rounded"
+                      className="rounded-2xl bg-brand-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-orange/90"
                     >
                       Accept
                     </button>
                     <button
                       onClick={() => patchStatus(c.id, "REJECTED")}
-                      className="px-3 py-1 bg-yellow-500 text-white rounded"
+                      className="rounded-2xl border border-[#e5e7eb] px-4 py-2 text-sm font-semibold text-[#4b505a] transition hover:border-[#fcd9a5] hover:text-brand-orange"
                     >
                       Reject
                     </button>
@@ -104,7 +83,7 @@ export default function ConnectionsPage() {
                 )}
                 <button
                   onClick={() => remove(c.id)}
-                  className="px-3 py-1 bg-red-500 text-white rounded"
+                  className="rounded-2xl bg-[#fff1df] px-4 py-2 text-sm font-semibold text-[#c97a12] transition hover:bg-[#ffe7c3] hover:text-brand-orange"
                 >
                   Remove
                 </button>
@@ -113,6 +92,6 @@ export default function ConnectionsPage() {
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
