@@ -1,14 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import useSWR, { mutate } from "swr";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
-const fetcher = (url: string) =>
-  fetch(url, { credentials: "include" }).then((r) => r.json());
+import {
+  backendFetcher,
+  backendRequest,
+  backendUrl,
+} from "@/app/lib/backend-api";
 
 export default function ProfilePage() {
-  const { data, error } = useSWR(`${API_BASE}/v1/auth/me`, fetcher);
+  const authMeKey = backendUrl("/v1/auth/me");
+  const { data, error } = useSWR(authMeKey, backendFetcher);
   const [form, setForm] = useState({
     name: "",
     headline: "",
@@ -39,21 +40,18 @@ export default function ProfilePage() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch(`${API_BASE}/v1/users/me`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(form),
-    });
-    setSaving(false);
-    if (res.ok) {
-      const json = await res.json();
-      // update SWR cache for /v1/auth/me and connections list
-      mutate(`${API_BASE}/v1/auth/me`);
+    try {
+      await backendRequest("/v1/users/me", {
+        method: "PATCH",
+        body: JSON.stringify(form),
+      });
+      mutate(authMeKey);
       alert("Profile updated");
-    } else {
-      const err = await res.text();
+    } catch (error) {
+      const err = error instanceof Error ? error.message : "Failed to save";
       alert(`Failed to save: ${err}`);
+    } finally {
+      setSaving(false);
     }
   };
 

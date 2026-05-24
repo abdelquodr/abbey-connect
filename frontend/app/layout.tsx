@@ -1,4 +1,13 @@
 import "./globals.css";
+import { Mulish } from "next/font/google";
+import { Providers } from "./providers";
+
+const mulish = Mulish({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-mulish",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Abbey Peer Network",
@@ -12,9 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <main className="min-h-screen bg-gray-50 text-gray-900">
-          {children}
-        </main>
+        <Providers>
+          <main
+            className={` ${mulish.className} min-h-screen bg-brand-light-grey text-brand-grey`}
+          >
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

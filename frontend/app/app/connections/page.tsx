@@ -1,19 +1,20 @@
 "use client";
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
-
-const fetcher = (url: string) =>
-  fetch(url, { credentials: "include" }).then((r) => r.json());
+import {
+  backendFetcher,
+  backendRequest,
+  backendUrl,
+} from "@/app/lib/backend-api";
 
 export default function ConnectionsPage() {
+  const authMeKey = backendUrl("/v1/auth/me");
+  const connectionsKey = backendUrl("/v1/connections");
   const { data: userData, error: userError } = useSWR(
-    `${API_BASE}/v1/auth/me`,
-    fetcher,
+    authMeKey,
+    backendFetcher,
   );
-  const { data, error } = useSWR(`${API_BASE}/v1/connections`, fetcher);
+  const { data, error } = useSWR(connectionsKey, backendFetcher);
   const [recipientId, setRecipientId] = useState("");
   const [note, setNote] = useState("");
 
@@ -23,33 +24,28 @@ export default function ConnectionsPage() {
 
   const submitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch(`${API_BASE}/v1/connections`, {
+    await backendRequest("/v1/connections", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ recipientId: Number(recipientId), note }),
     });
     setRecipientId("");
     setNote("");
-    mutate(`${API_BASE}/v1/connections`);
+    mutate(connectionsKey);
   };
 
   const patchStatus = async (id: number, status: string) => {
-    await fetch(`${API_BASE}/v1/connections/${id}`, {
+    await backendRequest(`/v1/connections/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ status }),
     });
-    mutate(`${API_BASE}/v1/connections`);
+    mutate(connectionsKey);
   };
 
   const remove = async (id: number) => {
-    await fetch(`${API_BASE}/v1/connections/${id}`, {
+    await backendRequest(`/v1/connections/${id}`, {
       method: "DELETE",
-      credentials: "include",
     });
-    mutate(`${API_BASE}/v1/connections`);
+    mutate(connectionsKey);
   };
 
   return (

@@ -66,15 +66,34 @@ const saveToken = async (
  * @returns {Promise<Token>}
  */
 const verifyToken = async (token: string, type: TokenType): Promise<Token> => {
-  const payload = jwt.verify(token, config.jwt.secret);
-  const userId = Number(payload.sub);
-  const tokenData = await prisma.token.findFirst({
-    where: { token, type, userId, blacklisted: false }
-  });
-  if (!tokenData) {
-    throw new Error('Token not found');
+  try {
+    const payload = jwt.verify(token, config.jwt.secret);
+    const userId = Number(payload.sub);
+    const tokenData = await prisma.token.findFirst({
+      where: { token, type, userId, blacklisted: false }
+    });
+    if (!tokenData) {
+      throw new Error('Token not found');
+    }
+    return tokenData;
+  } catch (error) {
+    if (type !== TokenType.VERIFY_EMAIL) {
+      throw error;
+    }
+
+    const tokenData = await prisma.token.findFirst({
+      where: { token, type, blacklisted: false }
+    });
+    if (!tokenData) {
+      throw new Error('Token not found');
+    }
+
+    if (moment().isAfter(moment(tokenData.expires))) {
+      throw new Error('Token expired');
+    }
+
+    return tokenData;
   }
-  return tokenData;
 };
 
 /**
@@ -125,7 +144,12 @@ const generateResetPasswordToken = async (email: string): Promise<string> => {
  */
 const generateVerifyEmailToken = async (user: { id: number }): Promise<string> => {
   const expires = moment().add(config.jwt.verifyEmailExpirationMinutes, 'minutes');
-  const verifyEmailToken = generateToken(user.id, expires, TokenType.VERIFY_EMAIL);
+  const verifyEmailToken = Math.floor(1000 + Math.random() * 9000).toString();
+
+  await prisma.token.deleteMany({
+    where: { userId: user.id, type: TokenType.VERIFY_EMAIL }
+  });
+
   await saveToken(verifyEmailToken, user.id, expires, TokenType.VERIFY_EMAIL);
   return verifyEmailToken;
 };

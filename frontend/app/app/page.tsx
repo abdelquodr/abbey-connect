@@ -1,14 +1,19 @@
 "use client";
 import useSWR from "swr";
 import Link from "next/link";
+import { backendFetcher, backendUrl } from "@/app/lib/backend-api";
 
-const fetcher = (url: string) =>
-  fetch(url, { credentials: "include" }).then((r) => r.json());
+type AuthMeResponse = {
+  user: {
+    name?: string | null;
+    headline?: string | null;
+  };
+};
 
 export default function AppPage() {
-  const { data, error } = useSWR(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/v1/auth/me`,
-    fetcher,
+  const { data, error } = useSWR<AuthMeResponse>(
+    backendUrl("/v1/auth/me"),
+    backendFetcher,
   );
 
   if (error)

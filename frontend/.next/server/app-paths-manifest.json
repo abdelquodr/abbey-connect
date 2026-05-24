@@ -1,7 +1,8 @@
 {
-  "/app/profile/page": "app/app/profile/page.js",
+  "/not-found": "app/not-found.js",
+  "/app/page": "app/app/page.js",
   "/app/connections/page": "app/app/connections/page.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/auth/register/page": "app/auth/register/page.js",
-  "/app/page": "app/app/page.js"
+  "/auth/signin/page": "app/auth/signin/page.js",
+  "/auth/signup/verify/page": "app/auth/signup/verify/page.js",
+  "/auth/signup/verified/page": "app/auth/signup/verified/page.js"
 }

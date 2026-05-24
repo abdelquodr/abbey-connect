@@ -3,6 +3,12 @@ import config from '../config/config';
 import logger from '../config/logger';
 
 const transport = nodemailer.createTransport(config.email.smtp);
+
+const hasRealSmtpConfig =
+  config.email.smtp.host !== 'email-server' &&
+  config.email.smtp.auth.user !== 'email-server-username' &&
+  config.email.smtp.auth.pass !== 'email-server-password';
+
 /* istanbul ignore next */
 if (config.env !== 'test') {
   transport
@@ -24,6 +30,10 @@ if (config.env !== 'test') {
  */
 const sendEmail = async (to: string, subject: string, text: string) => {
   const msg = { from: config.email.from, to, subject, text };
+  if (config.env === 'development' && !hasRealSmtpConfig) {
+    logger.info(`[DEV MODE] Email would be sent to ${to}: ${subject}`);
+    return;
+  }
   await transport.sendMail(msg);
 };
 
@@ -36,7 +46,7 @@ const sendEmail = async (to: string, subject: string, text: string) => {
 const sendResetPasswordEmail = async (to: string, token: string) => {
   const subject = 'Reset password';
   // replace this url with the link to the reset password page of your front-end app
-  const resetPasswordUrl = `http://link-to-app/reset-password?token=${token}`;
+  const resetPasswordUrl = `${config.frontend.baseUrl}/auth/reset-password?token=${token}`;
   const text = `Dear user,
 To reset your password, click on this link: ${resetPasswordUrl}
 If you did not request any password resets, then ignore this email.`;
@@ -51,15 +61,14 @@ If you did not request any password resets, then ignore this email.`;
  */
 const sendVerificationEmail = async (to: string, token: string) => {
   const subject = 'Email Verification';
-  // replace this url with the link to the email verification page of your front-end app
-  const verificationEmailUrl = `http://link-to-app/verify-email?token=${token}`;
   const text = `Dear user,
-To verify your email, click on this link: ${verificationEmailUrl}`;
+Your verification code is: ${token}
+
+Enter this code in the app to verify your email. If you did not request this, you can ignore this email.`;
   await sendEmail(to, subject, text);
 };
 
 export default {
-  transport,
   sendEmail,
   sendResetPasswordEmail,
   sendVerificationEmail

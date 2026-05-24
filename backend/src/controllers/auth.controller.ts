@@ -39,12 +39,11 @@ const setSessionCookies = (res: any, accessToken: string, refreshToken: string) 
 };
 
 const register = catchAsync(async (req, res) => {
-  const { email, password } = req.body;
-  const user = await userService.createUser(email, password);
+  const { email, password, name } = req.body;
+  const user = await userService.createUser(email, password, name);
   const userWithoutPassword = exclude(user, ['password', 'createdAt', 'updatedAt']);
-  const tokens = await tokenService.generateAuthTokens(user);
-  setSessionCookies(res, tokens.access.token, tokens.refresh!.token);
-  res.status(httpStatus.CREATED).send({ user: userWithoutPassword, tokens });
+  await authService.sendVerificationEmailToUser(user);
+  res.status(httpStatus.CREATED).send({ user: userWithoutPassword });
 });
 
 const login = catchAsync(async (req, res) => {
@@ -81,9 +80,14 @@ const resetPassword = catchAsync(async (req, res) => {
 
 const sendVerificationEmail = catchAsync(async (req, res) => {
   const user = req.user as User;
-  const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
-  await emailService.sendVerificationEmail(user.email, verifyEmailToken);
+  await authService.sendVerificationEmailToUser(user);
   res.status(httpStatus.NO_CONTENT).send();
+});
+
+const resendVerificationEmail = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  await authService.sendVerificationEmailToEmail(email);
+  res.status(httpStatus.OK).send({ message: 'Verification email sent successfully' });
 });
 
 const verifyEmail = catchAsync(async (req, res) => {
@@ -104,6 +108,7 @@ export default {
   forgotPassword,
   resetPassword,
   sendVerificationEmail,
+  resendVerificationEmail,
   verifyEmail,
   me
 };

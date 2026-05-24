@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import tokenService from './token.service';
 import userService from './user.service';
+import emailService from './email.service';
 import ApiError from '../utils/ApiError';
 import { TokenType, User } from '@prisma/client';
 import prisma from '../client';
@@ -117,6 +118,21 @@ const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
   }
 };
 
+const sendVerificationEmailToUser = async (user: Pick<User, 'id' | 'email'>) => {
+  const verifyEmailToken = await tokenService.generateVerifyEmailToken(user);
+  await emailService.sendVerificationEmail(user.email, verifyEmailToken);
+  return verifyEmailToken;
+};
+
+const sendVerificationEmailToEmail = async (email: string) => {
+  const user = await userService.getUserByEmail(email, ['id', 'email', 'isEmailVerified']);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  return sendVerificationEmailToUser(user);
+};
+
 const getCurrentSessionUser = async (userId: number) => {
   const user = await userService.getUserById(userId, [
     'id',
@@ -145,5 +161,7 @@ export default {
   refreshAuth,
   resetPassword,
   verifyEmail,
+  sendVerificationEmailToUser,
+  sendVerificationEmailToEmail,
   getCurrentSessionUser
 };

@@ -20,7 +20,7 @@
     "docker:test": "docker-compose -f docker-compose.yml -f docker-compose.test.yml up",
     "docker:dev-db:start": "docker-compose -f docker-compose.only-db-dev.yml up -d",
     "docker:dev-db:stop": "docker-compose -f docker-compose.only-db-dev.yml down",
-    "prepare": "husky install",
+    "prepare": "husky install || exit 0",
     "build": "rimraf build && tsc -p tsconfig.json"
   },
   "keywords": [
