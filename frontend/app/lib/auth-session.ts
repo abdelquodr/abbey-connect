@@ -1,6 +1,6 @@
-const AUTH_TOKEN_KEY = "zojapay-auth-token";
-const AUTH_EMAIL_KEY = "zojapay-auth-email";
-const AUTH_SESSION_EVENT = "zojapay-auth-session-changed";
+const AUTH_TOKEN_KEY = "abbey-auth-token";
+const AUTH_EMAIL_KEY = "abbey-auth-email";
+const AUTH_SESSION_EVENT = "abbey-auth-session-changed";
 
 const isBrowser = () => typeof window !== "undefined";
 

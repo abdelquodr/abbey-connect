@@ -40,8 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const onStorage = (e: StorageEvent) => {
       if (
-        e.key === "zojapay-auth-token" ||
-        e.key === "zojapay-auth-email" ||
+        e.key === "abbey-auth-token" ||
+        e.key === "abbey-auth-email" ||
         e.key === null
       ) {
         syncSessionState();

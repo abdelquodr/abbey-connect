@@ -3,7 +3,7 @@ import { authSession } from "./auth-session";
 const DEFAULT_BACKEND_BASE_URL = "http://localhost:3000";
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const AUTH_REFRESH_PATH = "/v1/auth/refresh-tokens";
-const AUTH_UNAUTHORIZED_EVENT = "zojapay-auth-unauthorized";
+const AUTH_UNAUTHORIZED_EVENT = "abbey-auth-unauthorized";
 
 const AUTH_PATH_PREFIXES = [
   "/v1/auth/login",
