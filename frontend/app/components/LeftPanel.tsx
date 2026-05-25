@@ -48,7 +48,7 @@ export function LeftPanel({
             className="h-10 w-auto"
           />
           <span className="text-2xl pb-2 font-bold text-[#2b2f38]">
-            Abbey Peers
+            Abbey Network
           </span>
         </div>
 

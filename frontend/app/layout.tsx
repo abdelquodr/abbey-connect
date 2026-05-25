@@ -10,7 +10,10 @@ const mulish = Mulish({
 });
 
 export const metadata = {
-  title: "Abbey Peer Network",
+  title: "Abbey Network",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
