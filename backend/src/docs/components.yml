@@ -39,6 +39,62 @@ components:
         refresh:
           $ref: '#/components/schemas/Token'
 
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        headline:
+          type: string
+        city:
+          type: string
+        avatarUrl:
+          type: string
+
+    Connection:
+      type: object
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        recipientId:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, REJECTED]
+        note:
+          type: string
+          nullable: true
+        requester:
+          $ref: '#/components/schemas/UserSummary'
+        recipient:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        sender:
+          $ref: '#/components/schemas/UserSummary'
+
     Error:
       type: object
       properties:
