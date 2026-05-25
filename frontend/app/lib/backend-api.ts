@@ -3,6 +3,7 @@ import { authSession } from "./auth-session";
 const DEFAULT_BACKEND_BASE_URL = "http://localhost:3000";
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const AUTH_REFRESH_PATH = "/v1/auth/refresh-tokens";
+const AUTH_UNAUTHORIZED_EVENT = "zojapay-auth-unauthorized";
 
 const AUTH_PATH_PREFIXES = [
   "/v1/auth/login",
@@ -165,6 +166,14 @@ const clearClientSession = () => {
   authSession.clearEmail();
 };
 
+const notifyUnauthorized = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+};
+
 const requestWithAutomaticRefresh = async <T>(
   url: string,
   init: BackendRequestOptions,
@@ -196,6 +205,7 @@ const requestWithAutomaticRefresh = async <T>(
     }
 
     clearClientSession();
+    notifyUnauthorized();
   }
 
   return parseBackendResponse<T>(response);
@@ -300,3 +310,5 @@ export const backendFetcher = async <T>(url: string): Promise<T> => {
     !shouldSkipAuthRefresh(getRequestPath(url)),
   );
 };
+
+export const getUnauthorizedEventName = () => AUTH_UNAUTHORIZED_EVENT;

@@ -29,7 +29,7 @@ export default function Page() {
     }
 
     if (error) {
-      router.replace("/auth/signup");
+      router.replace("/auth/signin");
     }
   }, [data, error, router]);
 

@@ -62,7 +62,7 @@ export function LeftPanel({
         </ul>
 
         <p className="mt-10 text-xs text-[#a0aab5]">
-          © 2026 Abbey. All rights reserved
+          © 2026 Abbey Network. All rights reserved
         </p>
       </div>
     </section>

@@ -8,7 +8,9 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { authSession } from "./auth-session";
+import { getUnauthorizedEventName } from "./backend-api";
 
 type AuthContextValue = {
   token: string | null;
@@ -21,6 +23,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [token, setTokenState] = useState<string | null>(() =>
     authSession.getToken(),
   );
@@ -49,8 +52,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       syncSessionState();
     };
 
+    const onUnauthorized = () => {
+      syncSessionState();
+      router.replace("/auth/signin");
+    };
+
     window.addEventListener("storage", onStorage);
     window.addEventListener(authSession.getSessionEventName(), onSessionChange);
+    window.addEventListener(getUnauthorizedEventName(), onUnauthorized);
 
     return () => {
       window.removeEventListener("storage", onStorage);
@@ -58,8 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         authSession.getSessionEventName(),
         onSessionChange,
       );
+      window.removeEventListener(getUnauthorizedEventName(), onUnauthorized);
     };
-  }, []);
+  }, [router]);
 
   const setToken = useCallback((t: string | null) => {
     if (t) authSession.setToken(t);
