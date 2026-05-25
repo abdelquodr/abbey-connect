@@ -144,7 +144,11 @@ export default function MessagesPage() {
   return (
     <section className="space-y-4">
       {statusMessage ? (
-        <div className="rounded-3xl border border-[#fcd9a5] bg-[#fff7eb] p-4 text-sm text-[#7c4a00] shadow-[0_12px_34px_rgba(17,24,39,0.06)]">
+        <div
+          className="rounded-3xl border border-[#fcd9a5] bg-[#fff7eb] p-4 text-sm text-[#7c4a00] shadow-[0_12px_34px_rgba(17,24,39,0.06)]"
+          role="status"
+          aria-live="polite"
+        >
           {statusMessage}
         </div>
       ) : null}

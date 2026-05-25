@@ -1,9 +1,13 @@
 import { authApi, AuthApiError } from "../auth-api";
+import { backendRequest, BackendApiError } from "../backend-api";
+import { authSession } from "../auth-session";
 
 describe("authApi request edge cases", () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
+    authSession.clearToken();
+    authSession.clearEmail();
   });
 
   it("maps offline or bad-network errors to AuthApiError", async () => {
@@ -69,5 +73,66 @@ describe("authApi request edge cases", () => {
       code: "HTTP_ERROR",
       message: "Internal error",
     });
+  });
+
+  it("refreshes an expired session once and retries the original request", async () => {
+    authSession.setToken("expired-token");
+
+    const fetchMock = jest.spyOn(global, "fetch");
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: "Please authenticate" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            access: { token: "fresh-token" },
+            refresh: { token: "refresh-token" },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 1, email: "test@example.com" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    await expect(backendRequest("/v1/users/me")).resolves.toEqual({
+      id: 1,
+      email: "test@example.com",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(authSession.getToken()).toBe("fresh-token");
+  });
+
+  it("clears the local session when refresh fails", async () => {
+    authSession.setToken("expired-token");
+    authSession.setEmail("test@example.com");
+
+    jest.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: "Please authenticate" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(
+      backendRequest("/v1/users/me"),
+    ).rejects.toMatchObject<BackendApiError>({
+      status: 401,
+      message: "Please authenticate",
+    });
+
+    expect(authSession.getToken()).toBeNull();
+    expect(authSession.getEmail()).toBeNull();
   });
 });

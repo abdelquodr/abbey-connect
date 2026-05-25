@@ -1,7 +1,16 @@
 const AUTH_TOKEN_KEY = "zojapay-auth-token";
 const AUTH_EMAIL_KEY = "zojapay-auth-email";
+const AUTH_SESSION_EVENT = "zojapay-auth-session-changed";
 
 const isBrowser = () => typeof window !== "undefined";
+
+const notifySessionChange = () => {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
+};
 
 export const authSession = {
   getToken() {
@@ -18,6 +27,7 @@ export const authSession = {
     }
 
     window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+    notifySessionChange();
   },
 
   clearToken() {
@@ -26,6 +36,7 @@ export const authSession = {
     }
 
     window.localStorage.removeItem(AUTH_TOKEN_KEY);
+    notifySessionChange();
   },
 
   getEmail() {
@@ -42,6 +53,7 @@ export const authSession = {
     }
 
     window.localStorage.setItem(AUTH_EMAIL_KEY, email);
+    notifySessionChange();
   },
 
   clearEmail() {
@@ -50,5 +62,10 @@ export const authSession = {
     }
 
     window.localStorage.removeItem(AUTH_EMAIL_KEY);
+    notifySessionChange();
+  },
+
+  getSessionEventName() {
+    return AUTH_SESSION_EVENT;
   },
 };

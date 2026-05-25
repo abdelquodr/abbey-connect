@@ -34,6 +34,7 @@ export function MessageComposer({
 }: MessageComposerProps) {
   const [emojiOpen, setEmojiOpen] = useState(false);
   const disabledClass = disabled ? "cursor-not-allowed opacity-60" : "";
+  const helpTextId = disabled ? "message-composer-help" : undefined;
 
   return (
     <form
@@ -55,6 +56,7 @@ export function MessageComposer({
           placeholder="Write Something..."
           value={value}
           disabled={disabled}
+          aria-describedby={helpTextId}
           onChange={(event) => onChange(event.target.value)}
           className={`w-full bg-transparent text-sm text-[#2b2f38] outline-none placeholder:text-[#c0c5cc] ${disabledClass}`}
         />
@@ -65,6 +67,7 @@ export function MessageComposer({
             aria-label="Insert emoji"
             onClick={() => setEmojiOpen((s) => !s)}
             disabled={disabled}
+            aria-describedby={helpTextId}
             className={`flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#8a96a3] transition hover:text-brand-orange cursor-pointer ${disabledClass}`}
           >
             <Smile className="h-4 w-4" aria-hidden="true" />
@@ -96,6 +99,7 @@ export function MessageComposer({
         type="submit"
         aria-label="Send message"
         disabled={disabled}
+        aria-describedby={helpTextId}
         className={`flex h-11 w-11 items-center justify-center rounded-full bg-brand-orange text-white shadow-[0_10px_20px_rgba(255,134,0,0.28)] transition hover:bg-brand-orange/90 cursor-pointer ${disabledClass}`}
       >
         <Image
@@ -106,6 +110,12 @@ export function MessageComposer({
           height={4}
         />
       </button>
+
+      {disabled ? (
+        <p id="message-composer-help" className="sr-only" aria-live="polite">
+          Select an approved contact and sign in to send messages.
+        </p>
+      ) : null}
     </form>
   );
 }

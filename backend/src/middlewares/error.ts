@@ -5,13 +5,28 @@ import config from '../config/config';
 import logger from '../config/logger';
 import ApiError from '../utils/ApiError';
 
+type ErrorLike = {
+  statusCode?: number;
+  message?: string;
+  stack?: string;
+};
+
+const getErrorStatusCode = (error: ErrorLike) => {
+  if (typeof error.statusCode === 'number') {
+    return error.statusCode;
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return httpStatus.BAD_REQUEST;
+  }
+
+  return httpStatus.INTERNAL_SERVER_ERROR;
+};
+
 export const errorConverter: ErrorRequestHandler = (err, req, res, next) => {
   let error = err;
   if (!(error instanceof ApiError)) {
-    const statusCode =
-      error.statusCode || error instanceof Prisma.PrismaClientKnownRequestError
-        ? httpStatus.BAD_REQUEST
-        : httpStatus.INTERNAL_SERVER_ERROR;
+    const statusCode = getErrorStatusCode(error as ErrorLike);
     const message = error.message || httpStatus[statusCode];
     error = new ApiError(statusCode, message, false, err.stack);
   }

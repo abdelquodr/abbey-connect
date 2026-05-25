@@ -153,11 +153,11 @@ The environment variables can be found and modified in the `.env` file. They com
 PORT=3000
 
 # URL of the PostgreSQL database
-DATABASE_URL=postgresql://postgres:secret@localhost:5432/mydb?schema=public
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB_NAME?schema=public
 
 # JWT
 # JWT secret key
-JWT_SECRET=thisisasamplesecret
+JWT_SECRET=replace-with-a-long-random-secret
 # Number of minutes after which an access token expires
 JWT_ACCESS_EXPIRATION_MINUTES=30
 # Number of days after which a refresh token expires

@@ -29,18 +29,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    // Keep localStorage in sync if something else modifies it externally
+    // Keep session state in sync across tabs and local refresh/logout updates.
+    const syncSessionState = () => {
+      setTokenState(authSession.getToken());
+      setEmailState(authSession.getEmail());
+    };
+
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "zojapay-auth-token") {
-        setTokenState(authSession.getToken());
-      }
-      if (e.key === "zojapay-auth-email") {
-        setEmailState(authSession.getEmail());
+      if (
+        e.key === "zojapay-auth-token" ||
+        e.key === "zojapay-auth-email" ||
+        e.key === null
+      ) {
+        syncSessionState();
       }
     };
 
+    const onSessionChange = () => {
+      syncSessionState();
+    };
+
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(authSession.getSessionEventName(), onSessionChange);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(
+        authSession.getSessionEventName(),
+        onSessionChange,
+      );
+    };
   }, []);
 
   const setToken = useCallback((t: string | null) => {

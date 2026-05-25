@@ -1,5 +1,22 @@
+import { authSession } from "./auth-session";
+
 const DEFAULT_BACKEND_BASE_URL = "http://localhost:3000";
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+const AUTH_REFRESH_PATH = "/v1/auth/refresh-tokens";
+
+const AUTH_PATH_PREFIXES = [
+  "/v1/auth/login",
+  "/v1/auth/logout",
+  "/v1/auth/register",
+  "/v1/auth/refresh-tokens",
+  "/v1/auth/forgot-password",
+  "/v1/auth/reset-password",
+  "/v1/auth/send-verification-email",
+  "/v1/auth/verify-email",
+  "/v1/auth/resend-verification-email",
+];
+
+let authRefreshPromise: Promise<boolean> | null = null;
 
 export const BACKEND_BASE_URL = DEFAULT_BACKEND_BASE_URL;
 
@@ -24,19 +41,80 @@ export class BackendApiError extends Error {
   }
 }
 
-const parseResponse = async <T>(response: Response): Promise<T> => {
+const extractNestedToken = (value: unknown): string | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const directToken =
+    typeof record.token === "string"
+      ? record.token
+      : typeof record.access_token === "string"
+        ? record.access_token
+        : typeof record.accessToken === "string"
+          ? record.accessToken
+          : null;
+
+  if (directToken) {
+    return directToken;
+  }
+
+  const tokenFromTokens = extractNestedToken(record.tokens);
+  if (tokenFromTokens) {
+    return tokenFromTokens;
+  }
+
+  const tokenFromData = extractNestedToken(record.data);
+  if (tokenFromData) {
+    return tokenFromData;
+  }
+
+  for (const valueEntry of Object.values(record)) {
+    const nestedToken = extractNestedToken(valueEntry);
+    if (nestedToken) {
+      return nestedToken;
+    }
+  }
+
+  return null;
+};
+
+const getRequestPath = (pathOrUrl: string) => {
+  try {
+    return new URL(pathOrUrl).pathname;
+  } catch {
+    return pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
+  }
+};
+
+const shouldSkipAuthRefresh = (path: string) =>
+  AUTH_PATH_PREFIXES.some((prefix) => path.startsWith(prefix));
+
+const cloneHeaders = (headers?: HeadersInit, token?: string | null) => {
+  const requestHeaders = new Headers(headers ?? {});
+  if (token) {
+    requestHeaders.set("Authorization", `Bearer ${token}`);
+  }
+  return requestHeaders;
+};
+
+const readResponsePayload = async (response: Response): Promise<unknown> => {
   const contentType = response.headers.get("content-type") ?? "";
-  let data: unknown;
 
   if (contentType.includes("application/json")) {
     try {
-      data = await response.json();
+      return await response.json();
     } catch {
-      data = await response.text();
+      return await response.text();
     }
-  } else {
-    data = await response.text();
   }
+
+  return response.text();
+};
+
+const parseBackendResponse = async <T>(response: Response): Promise<T> => {
+  const data = await readResponsePayload(response);
 
   if (!response.ok) {
     const message =
@@ -50,6 +128,81 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
   }
 
   return data as T;
+};
+
+const refreshAuthSession = async () => {
+  if (!authRefreshPromise) {
+    authRefreshPromise = (async () => {
+      const response = await fetch(backendUrl(AUTH_REFRESH_PATH), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await readResponsePayload(response);
+      const nextToken = extractNestedToken(data);
+      if (nextToken) {
+        authSession.setToken(nextToken);
+      }
+
+      return true;
+    })().finally(() => {
+      authRefreshPromise = null;
+    });
+  }
+
+  return authRefreshPromise;
+};
+
+const clearClientSession = () => {
+  authSession.clearToken();
+  authSession.clearEmail();
+};
+
+const requestWithAutomaticRefresh = async <T>(
+  url: string,
+  init: BackendRequestOptions,
+  canRefresh: boolean,
+): Promise<T> => {
+  const requestInit: RequestInit = { ...init };
+  if ("timeoutMs" in requestInit) {
+    delete (requestInit as BackendRequestOptions).timeoutMs;
+  }
+
+  const response = await fetch(url, {
+    ...requestInit,
+    credentials: "include",
+    headers: cloneHeaders(requestInit.headers, authSession.getToken()),
+  });
+
+  if (response.status === 401 && canRefresh) {
+    const refreshed = await refreshAuthSession();
+    if (refreshed) {
+      const retryResponse = await fetch(url, {
+        ...requestInit,
+        credentials: "include",
+        headers: cloneHeaders(requestInit.headers, authSession.getToken()),
+      });
+
+      if (retryResponse.status !== 401) {
+        return parseBackendResponse<T>(retryResponse);
+      }
+    }
+
+    clearClientSession();
+  }
+
+  return parseBackendResponse<T>(response);
+};
+
+const parseResponse = async <T>(response: Response): Promise<T> => {
+  return parseBackendResponse<T>(response);
 };
 
 export const backendRequest = async <T>(
@@ -84,17 +237,19 @@ export const backendRequest = async <T>(
   }
 
   try {
-    const response = await fetch(backendUrl(path), {
-      ...requestInit,
-      credentials: "include",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        ...(requestInit.headers ?? {}),
+    const requestPath = getRequestPath(path);
+    return await requestWithAutomaticRefresh<T>(
+      backendUrl(path),
+      {
+        ...requestInit,
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...(requestInit.headers ?? {}),
+        },
       },
-    });
-
-    return parseResponse<T>(response);
+      !shouldSkipAuthRefresh(requestPath),
+    );
   } catch (error) {
     if (error instanceof BackendApiError) {
       throw error;
@@ -139,6 +294,9 @@ export const backendRequest = async <T>(
 };
 
 export const backendFetcher = async <T>(url: string): Promise<T> => {
-  const response = await fetch(url, { credentials: "include" });
-  return parseResponse<T>(response);
+  return requestWithAutomaticRefresh<T>(
+    url,
+    { method: "GET" },
+    !shouldSkipAuthRefresh(getRequestPath(url)),
+  );
 };
